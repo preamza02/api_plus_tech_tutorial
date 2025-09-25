@@ -2435,7 +2435,7 @@ func (ec *executionContext) unmarshalInputPokemonInput(ctx context.Context, obj 
 			it.Description = data
 		case "category":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("category"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}

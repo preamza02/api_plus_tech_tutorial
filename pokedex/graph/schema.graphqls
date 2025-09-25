@@ -22,7 +22,7 @@ enum PokemonType {
 input PokemonInput {
   name: String!
   description: String
-  category: String!
+  category: String
   type: [PokemonType!]!
   abilities: [String!]!
 }

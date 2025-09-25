@@ -10,7 +10,7 @@ type PokemonModel struct {
 	Name          string             `bun:"name,notnull"`
 	Description   *string            `bun:"description"`
 	Category      *string            `bun:"category"`
-	Types         []PokemonTypeModel `bun:"m2m:pokemon_types,join:Pokemon=PokemonType"`
+	Types         []PokemonTypeModel `bun:"m2m:pokemon_types,join:ppt.pokemon_iidd=p.ID"`
 	Abilities     []string           `bun:"type:array"`
 }
 

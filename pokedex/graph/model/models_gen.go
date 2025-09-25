@@ -24,7 +24,7 @@ type Pokemon struct {
 type PokemonInput struct {
 	Name        string        `json:"name"`
 	Description *string       `json:"description,omitempty"`
-	Category    string        `json:"category"`
+	Category    *string       `json:"category,omitempty"`
 	Type        []PokemonType `json:"type"`
 	Abilities   []string      `json:"abilities"`
 }

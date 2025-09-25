@@ -6,53 +6,224 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"slices"
+	"strconv"
 
 	"github.com/preamza02/pokedex/database"
 	"github.com/preamza02/pokedex/graph/model"
+	"github.com/uptrace/bun"
 )
 
 // PokemonCreate is the resolver for the pokemonCreate field.
 func (r *mutationResolver) PokemonCreate(ctx context.Context, input model.PokemonInput) (*model.Pokemon, error) {
-	panic(fmt.Errorf("not implemented: PokemonCreate - pokemonCreate"))
+	var pokemon database.PokemonModel
+	err := r.DB.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		pokemon := &database.PokemonModel{
+			Name:        input.Name,
+			Description: input.Description,
+			Category:    input.Category,
+			Abilities:   input.Abilities,
+		}
+		if _, err := tx.NewInsert().Model(pokemon).Returning("id").Exec(ctx); err != nil {
+			return err
+		}
+		if len(input.Type) == 0 {
+			return nil
+		}
+		pokemonTypeName := make([]string, len(input.Type))
+		for i, t := range input.Type {
+			pokemonTypeName[i] = t.String()
+		}
+		pokemonTypes := make([]database.PokemonTypesModel, len(input.Type))
+		var pokemonType []database.PokemonTypeModel
+		if err := tx.NewSelect().Model(&pokemonType).Where("name IN (?)", bun.In(pokemonTypeName)).Scan(ctx, &pokemonType); err != nil {
+			return err
+		}
+
+		for i := range pokemonType {
+			pokemonTypes[i] = database.PokemonTypesModel{
+				PokemonID:     pokemon.ID,
+				PokemonTypeID: pokemonType[i].ID,
+			}
+		}
+		if _, err := tx.NewInsert().Model(&pokemonTypes).Exec(ctx); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return &model.Pokemon{
+		ID:          fmt.Sprint(pokemon.ID),
+		Name:        input.Name,
+		Description: input.Description,
+		Category:    input.Category,
+		Abilities:   input.Abilities,
+		Type:        input.Type,
+	}, nil
 }
 
 // PokemonUpdate is the resolver for the pokemonUpdate field.
 func (r *mutationResolver) PokemonUpdate(ctx context.Context, id string, input model.PokemonInput) (*model.Pokemon, error) {
-	panic(fmt.Errorf("not implemented: PokemonUpdate - pokemonUpdate"))
+	ID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	err = r.DB.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		pokemon := database.PokemonModel{
+			ID:          ID,
+			Name:        input.Name,
+			Description: input.Description,
+			Category:    input.Category,
+			Abilities:   input.Abilities,
+		}
+		if _, err = tx.NewUpdate().Model(&pokemon).WherePK().Exec(ctx); err != nil {
+			return err
+		}
+		err := updatePokemonTypes(ctx, tx, ID, input.Type)
+		return err
+
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &model.Pokemon{
+		ID:          fmt.Sprint(ID),
+		Name:        input.Name,
+		Description: input.Description,
+		Category:    input.Category,
+		Abilities:   input.Abilities,
+		Type:        input.Type,
+	}, nil
+}
+
+func updatePokemonTypes(ctx context.Context, tx bun.Tx, pokemonID int64, types []model.PokemonType) error {
+	if len(types) == 0 {
+		return nil
+	}
+	var pokemonType []database.PokemonTypeModel
+	pokemonTypeName := make([]string, len(types))
+	for i, t := range types {
+		pokemonTypeName[i] = t.String()
+	}
+	if err := tx.NewSelect().Model(&pokemonType).Where("name IN (?)", bun.In(pokemonTypeName)).Scan(ctx, &pokemonType); err != nil {
+		return err
+	}
+	allPokemonTypeId := make([]int64, len(pokemonType))
+	for i, t := range pokemonType {
+		allPokemonTypeId[i] = t.ID
+	}
+	var pokemonTypes []database.PokemonTypesModel
+	if err := tx.NewSelect().Model(&pokemonTypes).Where("pokemon_id = ?", pokemonID).Scan(ctx, &pokemonTypes); err != nil {
+		return err
+	}
+	pokemonTypesDelete := make([]int64, 0)
+	for _, t := range pokemonTypes {
+		if slices.Contains(allPokemonTypeId, t.PokemonTypeID) {
+			continue
+		}
+		pokemonTypesDelete = append(pokemonTypesDelete, t.PokemonTypeID)
+	}
+	if len(pokemonTypesDelete) > 0 {
+		if _, err := tx.NewDelete().Model(&database.PokemonTypesModel{}).Where("pokemon_id = ? and type_id IN (?)", pokemonID, bun.In(pokemonTypesDelete)).Exec(ctx); err != nil {
+			return err
+		}
+	}
+	pokemonTypesInsert := make([]database.PokemonTypesModel, 0)
+	for _, t := range pokemonType {
+		found := false
+		for _, existing := range pokemonTypes {
+			if existing.PokemonTypeID == t.ID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			pokemonTypesInsert = append(pokemonTypesInsert, database.PokemonTypesModel{
+				PokemonID:     pokemonID,
+				PokemonTypeID: t.ID,
+			})
+		}
+	}
+
+	if len(pokemonTypesInsert) > 0 {
+		if _, err := tx.NewInsert().Model(&pokemonTypesInsert).Exec(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // PokemonDelete is the resolver for the pokemonDelete field.
 func (r *mutationResolver) PokemonDelete(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: PokemonDelete - pokemonDelete"))
+	ID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return false, err
+	}
+	err = r.DB.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		pokemonTypes := &database.PokemonTypesModel{}
+		if _, err := tx.NewDelete().Model(pokemonTypes).Where("pokemon_id = ?", ID).Exec(ctx); err != nil {
+			return err
+		}
+		pokemon := &database.PokemonModel{ID: ID}
+		if _, err := tx.NewDelete().Model(pokemon).WherePK().Exec(ctx); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // Pokemon is the resolver for the pokemon field.
 func (r *queryResolver) Pokemon(ctx context.Context, id *string, name *string) (*model.Pokemon, error) {
-	panic(fmt.Errorf("not implemented: Pokemon - pokemon"))
+	if id == nil && name == nil {
+		return nil, fmt.Errorf("id or name is required")
+	}
+	if id != nil && name != nil {
+		return nil, fmt.Errorf("only one of id or name is allowed")
+	}
+	pokemon := new(database.PokemonModel)
+	var err error
+	if id != nil {
+		pokemonID, err := strconv.ParseInt(*id, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		err = r.DB.NewSelect().Model(pokemon).Where("id = ?", pokemonID).Relation("Types").Scan(ctx)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		pokemons := []database.PokemonModel{}
+		err = r.DB.NewSelect().Model(&pokemons).Where("name = ?", &name).Relation("Types").Scan(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if len(pokemons) == 0 {
+			return nil, errors.New("pokemon not found")
+		}
+		pokemon = &pokemons[0]
+	}
+	return model.MapDatabasePokemonModelToPokemon(pokemon), nil
 }
 
 // Pokemons is the resolver for the pokemons field.
 func (r *queryResolver) Pokemons(ctx context.Context) ([]*model.Pokemon, error) {
-	pokemons := make([]*database.PokemonModel, 0)
-	err := r.DB.NewSelect().Model(&pokemons).Scan(ctx)
+	var pokemons []database.PokemonModel
+	err := r.DB.NewSelect().Model(&pokemons).Relation("Types").Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
 	answer := make([]*model.Pokemon, len(pokemons))
 	for i, p := range pokemons {
-		answer[i] = &model.Pokemon{
-			ID:          fmt.Sprint(p.ID),
-			Name:        p.Name,
-			Description: p.Description,
-			Category:    p.Category,
-			Type:        make([]model.PokemonType, len(p.Types)),
-			Abilities:   p.Abilities,
-		}
-
-		for j, t := range p.Types {
-			answer[i].Type[j] = model.PokemonType(t.Name)
-		}
+		answer[i] = model.MapDatabasePokemonModelToPokemon(&p)
 	}
 	return answer, nil
 }

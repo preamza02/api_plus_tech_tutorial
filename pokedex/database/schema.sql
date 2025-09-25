@@ -1,7 +1,7 @@
 CREATE TABLE
    pokemon (
       id INTEGER PRIMARY KEY,
-      name TEXT NOT NULL,
+      name TEXT UNIQUE NOT NULL,
       description TEXT,
       category TEXT,
       abilities TEXT
@@ -26,7 +26,8 @@ values
    ('NORMAL'),
    ('FIRE'),
    ('WATER'),
-   ('ICE');
+   ('ICE'),
+   ('FIGHTING');
 
 INSERT INTO
    pokemon (id, name, description, category, abilities)
