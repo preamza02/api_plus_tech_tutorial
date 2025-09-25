@@ -13,28 +13,20 @@ type Mutation struct {
 }
 
 type Pokemon struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Description *string           `json:"description,omitempty"`
-	Category    *string           `json:"category,omitempty"`
-	Type        []PokemonType     `json:"type"`
-	Abilities   []*PokemonAbility `json:"abilities"`
-}
-
-type PokemonAbility struct {
-	Name string `json:"name"`
-}
-
-type PokemonAbilityInput struct {
-	Name string `json:"name"`
+	ID          string        `json:"id"`
+	Name        string        `json:"name"`
+	Description *string       `json:"description,omitempty"`
+	Category    *string       `json:"category,omitempty"`
+	Type        []PokemonType `json:"type"`
+	Abilities   []string      `json:"abilities"`
 }
 
 type PokemonInput struct {
-	Name        string                 `json:"name"`
-	Description *string                `json:"description,omitempty"`
-	Category    string                 `json:"category"`
-	Type        []PokemonType          `json:"type"`
-	Abilities   []*PokemonAbilityInput `json:"abilities"`
+	Name        string        `json:"name"`
+	Description *string       `json:"description,omitempty"`
+	Category    string        `json:"category"`
+	Type        []PokemonType `json:"type"`
+	Abilities   []string      `json:"abilities"`
 }
 
 type Query struct {

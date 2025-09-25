@@ -9,10 +9,11 @@ import (
 )
 
 func InitSqlite() *bun.DB {
-	sqldb, err := sql.Open(sqliteshim.ShimName, "file:test.db?cache=shared&mode=rwc")
+	sqldb, err := sql.Open(sqliteshim.ShimName, "file:db/pokedex.db?cache=shared&mode=rwc")
 	if err != nil {
 		panic(err)
 	}
 	db := bun.NewDB(sqldb, sqlitedialect.New())
+	db.RegisterModel((*PokemonTypesModel)(nil))
 	return db
 }

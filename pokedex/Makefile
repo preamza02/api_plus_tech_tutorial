@@ -3,4 +3,4 @@ build:
 
 data/pokedex.db:
 	mkdir -p data
-	sqlite3 data/pokedex.db < database/schema.sql
+	sqlite3 data/pokedex.db  < database/schema.sql

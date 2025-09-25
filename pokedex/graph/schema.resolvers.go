@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/preamza02/pokedex/database"
 	"github.com/preamza02/pokedex/graph/model"
 )
 
@@ -33,7 +34,27 @@ func (r *queryResolver) Pokemon(ctx context.Context, id *string, name *string) (
 
 // Pokemons is the resolver for the pokemons field.
 func (r *queryResolver) Pokemons(ctx context.Context) ([]*model.Pokemon, error) {
-	panic(fmt.Errorf("not implemented: Pokemons - pokemons"))
+	pokemons := make([]*database.PokemonModel, 0)
+	err := r.DB.NewSelect().Model(&pokemons).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	answer := make([]*model.Pokemon, len(pokemons))
+	for i, p := range pokemons {
+		answer[i] = &model.Pokemon{
+			ID:          fmt.Sprint(p.ID),
+			Name:        p.Name,
+			Description: p.Description,
+			Category:    p.Category,
+			Type:        make([]model.PokemonType, len(p.Types)),
+			Abilities:   p.Abilities,
+		}
+
+		for j, t := range p.Types {
+			answer[i].Type[j] = model.PokemonType(t.Name)
+		}
+	}
+	return answer, nil
 }
 
 // Mutation returns MutationResolver implementation.
