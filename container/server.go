@@ -15,9 +15,10 @@ const defaultPort = "8080"
 
 func main() {
 	r := chi.NewRouter()
-	sqlite := database.InitSqlite()
+	// sqlite := database.InitSqlite()
+	pgsql := database.InitPostgres()
 	resolver := &graph.Resolver{
-		DB: sqlite,
+		DB: pgsql,
 	}
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))

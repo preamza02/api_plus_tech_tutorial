@@ -5,7 +5,9 @@ go 1.25.1
 require (
 	github.com/99designs/gqlgen v0.17.80
 	github.com/go-chi/chi/v5 v5.2.3
+	github.com/lib/pq v1.10.9
 	github.com/uptrace/bun v1.2.15
+	github.com/uptrace/bun/dialect/pgdialect v1.2.15
 	github.com/uptrace/bun/dialect/sqlitedialect v1.2.15
 	github.com/uptrace/bun/driver/sqliteshim v1.2.15
 	github.com/vektah/gqlparser/v2 v2.5.30

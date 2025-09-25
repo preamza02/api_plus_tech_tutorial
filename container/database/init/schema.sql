@@ -21,13 +21,13 @@ CREATE TABLE
 
 
 INSERT INTO
-   pokemon_type (name)
+   pokemon_type (id,name)
 values
-   ('NORMAL'),
-   ('FIRE'),
-   ('WATER'),
-   ('ICE'),
-   ('FIGHTING');
+   (1,'NORMAL'),
+   (2,'FIRE'),
+   (3,'WATER'),
+   (4,'ICE'),
+   (5,'FIGHTING');
 
 INSERT INTO
    pokemon (id, name, description, category, abilities)
