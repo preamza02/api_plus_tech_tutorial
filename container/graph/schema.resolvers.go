@@ -67,7 +67,6 @@ func (r *mutationResolver) PokemonCreate(ctx context.Context, input model.Pokemo
 	}, nil
 }
 
-// PokemonUpdate is the resolver for the pokemonUpdate field.
 func (r *mutationResolver) PokemonUpdate(ctx context.Context, id string, input model.PokemonInput) (*model.Pokemon, error) {
 	ID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {

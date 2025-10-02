@@ -1,6 +1,6 @@
 CREATE TABLE
    pokemon (
-      id INTEGER PRIMARY KEY,
+      id SERIAL PRIMARY KEY,
       name TEXT UNIQUE NOT NULL,
       description TEXT,
       category TEXT,
@@ -8,7 +8,7 @@ CREATE TABLE
    );
 
 CREATE TABLE
-   pokemon_type (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+   pokemon_type (id SERIAL PRIMARY KEY, name TEXT NOT NULL);
 
 CREATE TABLE
    pokemon_types (
